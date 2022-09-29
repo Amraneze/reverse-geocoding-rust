@@ -1,0 +1,27 @@
+[package]
+edition = "2021"
+version = "0.1.0"
+readme = "README.md"
+name = "reverse-geocoding"
+authors = ["Amrane Ait Zeouay <a.zeouayamra@gmail.com>"]
+repository = "https://github.com/amraneze/reverse-geocoding-rust"
+description = "In memory application to reverse lookup address based on latitude and longitude."
+keywords = ["reverse", "geocoding", "latitude", "longitude", "memory"]
+
+[[bin]]
+name = "reverse-geocoding"
+path = "src/main.rs"
+
+[lib]
+name = "reverse_geocoding"
+path = "src/lib.rs"
+
+[toolchain]
+channel = "stable"
+components = ["rustfmt"]
+
+[dependencies]
+hex = "0.4.3"
+lazy_static = "1.4.0"
+slog = "2.7.0"
+sloggers = "2.1.1"
