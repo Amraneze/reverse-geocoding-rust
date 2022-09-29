@@ -29,3 +29,9 @@ impl ReadBytes for dyn Read {
         return T::from_be_bytes(number_buffer);
     }
 }
+
+pub mod number {
+    pub fn parse_u32(index: i32) -> u32 {
+        return if index < 0 { 0 } else { index as u32 };
+    }
+}

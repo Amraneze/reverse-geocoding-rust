@@ -21,7 +21,7 @@ channel = "stable"
 components = ["rustfmt"]
 
 [dependencies]
-hex = "0.4.3"
 lazy_static = "1.4.0"
+libmath = "0.2.1"
 slog = "2.7.0"
 sloggers = "2.1.1"
