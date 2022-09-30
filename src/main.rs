@@ -30,7 +30,7 @@ pub fn main() -> Result<()> {
 pub unsafe fn lookup() -> Result<()> {
     match &mut CACHE {
         Some(cache) => {
-            let result = cache.lookup(1.33, 1.09909);
+            let result = cache.lookup(-73.9865812, 40.7305991);
             println!("result {:?}", result);
         },
         None => panic!("Geocoding Cache is not available"),

@@ -1,11 +1,12 @@
 use crate::io::io;
 use crate::logger::LOGGER;
-use crate::number::{ReadBytes, number};
+use crate::number::{number, ReadBytes};
 use crate::types::Buffer;
 use crate::types::Data;
+use byteorder::{ByteOrder, LittleEndian};
 use math::round;
 use std::collections::HashMap;
-use std::io::{Cursor, Read, Result, Seek, SeekFrom};
+use std::io::{Cursor, Read, Result, Seek};
 use std::io::{Error, ErrorKind};
 
 #[derive(Debug, Default)]
@@ -33,35 +34,55 @@ impl Cache {
     pub fn lookup(&mut self, longitude: f32, latitude: f32) -> Vec<String> {
         debug!(LOGGER, "longitude: {}, latitude: {}", longitude, latitude);
         let index = self.lookup_uncached(longitude, latitude);
+        println!("Index {}", index);
         return match self.lookup_entry(index) {
             Some(address) => address.to_vec(),
             None => {
-                debug!(LOGGER, "Couldn't find any geospatial data for longitude: {} & latitude: {}", longitude, latitude);
+                debug!(
+                    LOGGER,
+                    "Couldn't find any geospatial data for longitude: {} & latitude: {}",
+                    longitude,
+                    latitude
+                );
                 return vec![];
             }
-        }
+        };
     }
 
-    fn read_unsigned_i32(&mut self) -> Result<i32> {
-        let mut value = 0 as i32;
+    fn read_unsigned_i32(&mut self) -> Result<i64> {
+        let mut value = 0 as i64;
         let mut bits = 0 as u32;
         loop {
-            let position = self.buffer.position() as i64;
-            let data = self.buffer.seek(SeekFrom::Current(position))
-            .expect(format!("Can't find the position {} in the buffer", position).as_str()) as i32;
+            // let position = self.buffer.position() as i64;
+            // let data = self
+            //     .buffer
+            //     .seek(SeekFrom::Current(position))
+            //     .expect(format!("Can't find the position {} in the buffer", position).as_str())
+            //     as i32;
+            let mut bit_buffer = vec![0u8; 1];
+            self.buffer
+                .read_exact(&mut bit_buffer)
+                .expect("An error occurred while reading bytes from the buffer");
+            let data = LittleEndian::read_int(&bit_buffer, 1);
             value |= (data & 0x7F) << bits;
             if (data & 0x80) == 0 {
                 return Ok(value);
             }
             bits += 7;
             if bits > 35 {
-                Error::new(ErrorKind::InvalidData, "Variable length quantity is too long for expected integer");
+                Error::new(
+                    ErrorKind::InvalidData,
+                    "Variable length quantity is too long for expected integer",
+                );
             }
         }
-        Error::new(ErrorKind::InvalidData, "An issue occurred while reading the integer");
+        Error::new(
+            ErrorKind::InvalidData,
+            "An issue occurred while reading the integer",
+        );
     }
 
-    fn lookup_uncached(&mut self, longitude: f32, latitude: f32) -> i32 {
+    fn lookup_uncached(&mut self, longitude: f32, latitude: f32) -> i64 {
         let x = round::floor(
             ((longitude + self.geo_data.x_shift) * self.geo_data.x_scale).into(),
             0,
@@ -70,22 +91,24 @@ impl Cache {
             ((latitude + self.geo_data.y_shift) * self.geo_data.y_scale).into(),
             0,
         ) as i32;
-        if x < 0 || number::parse_u32(x) >= self.geo_data.width || y < 0 || number::parse_u32(y) >= self.geo_data.height {
+        if x < 0
+            || number::parse_u32(x) >= self.geo_data.width
+            || y < 0
+            || number::parse_u32(y) >= self.geo_data.height
+        {
             return 0;
         }
         unsafe {
-            let position = HEADER_SIZE + (number::parse_u32(y) << 2);
-            let row_position = self
-                .buffer
-                .seek(SeekFrom::Current(position.into()))
-                .expect(&format!("Couldn't find the position for {}", position))
-                as i32;
-            self.buffer.set_position(row_position as u64);
-            let mut i = 0;
-            while i < x {
+            let position = (HEADER_SIZE + (number::parse_u32(y) << 2)) as u64;
+            self.buffer.set_position(position);
+            let row_position = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer) as u64;
+            self.buffer.set_position(row_position);
+            let mut i = 0 as i64;
+            let mut x_i64 = i64::from(x);
+            while i <= x_i64 {
                 let count = self.read_unsigned_i32().unwrap();
                 i += self.read_unsigned_i32().unwrap() + 1;
-                if x < i {
+                if x_i64 < i {
                     return count;
                 }
             }
@@ -95,22 +118,49 @@ impl Cache {
 
     fn lookup_entry_uncached(&mut self, index: u32) -> Vec<String> {
         unsafe {
-            let position = HEADER_SIZE + (self.geo_data.height << 2);
+            let position = (HEADER_SIZE + ((self.geo_data.height + index) << 2)) as u64;
+            self.buffer.set_position(position);
             let start = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer);
             let end = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer);
             if start == end {
                 return vec![];
             }
+            let length = (end - start) as usize;
             self.buffer.set_position(start as u64);
-            debug!(LOGGER, "Here position {}, {}", start, end);
-            // let decoded = str::from_utf8(self.buffer.seek(SeekFrom::Current(end)).unwrap());
+            let mut decoded_buffer = vec![0u8; length];
+            self.buffer.read_exact(&mut decoded_buffer);
             self.buffer.rewind();
-            return vec![];
+            return match std::str::from_utf8(&mut decoded_buffer) {
+                Ok(address) => {
+                    let mut result: Vec<String> = address
+                        .split('\0')
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>();
+                    match result.last() {
+                        Some(maybe_empty_string) => {
+                            if maybe_empty_string == &"" {
+                                // remove the last element because it's an empty string
+                                result.pop();
+                            }
+                        }
+                        None => (),
+                    }
+                    return result;
+                }
+                Err(error) => {
+                    error!(
+                        LOGGER,
+                        "We couldn't find any geospatial address for the index {}", index
+                    );
+                    return vec![];
+                }
+            };
         }
     }
 
-    fn lookup_entry(&mut self, key: i32) -> Option<&mut Vec<String>> {
-        let index = number::parse_u32(key);
+    fn lookup_entry(&mut self, key: i64) -> Option<&mut Vec<String>> {
+        let index = key as u32;
+        //let index = number::parse_u32(key as u32);
         if key < 0 || index >= self.geo_data.numentries {
             return None;
         }
@@ -118,13 +168,11 @@ impl Cache {
             true => self.cache.get_mut(&index),
             false => {
                 let cached_entry = self.lookup_entry_uncached(index);
-                self
-                .cache
-                .insert(index, cached_entry).as_mut();
+                self.cache.insert(index, cached_entry).as_mut();
                 // I can't return the result of insert, I'm getting
                 // "cannot return reference to temporary value" error
                 return self.cache.get_mut(&index);
-            },
+            }
         };
     }
 
@@ -136,8 +184,8 @@ impl Cache {
         }
         let width = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
         let height = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
-        let x_scale = <dyn Read as ReadBytes>::read::<f32>(&mut buffer);
-        let y_scale = <dyn Read as ReadBytes>::read::<f32>(&mut buffer);
+        let x_scale = width as f32 / <dyn Read as ReadBytes>::read::<f32>(&mut buffer);
+        let y_scale = height as f32 / <dyn Read as ReadBytes>::read::<f32>(&mut buffer);
         let x_shift = <dyn Read as ReadBytes>::read::<f32>(&mut buffer);
         let y_shift = <dyn Read as ReadBytes>::read::<f32>(&mut buffer);
         let numentries = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
