@@ -4,6 +4,7 @@ extern crate lazy_static;
 extern crate slog;
 
 pub mod cache;
+pub mod geocoding;
 pub mod io;
 pub mod logger;
 pub mod number;

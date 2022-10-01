@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/rust,intellij+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust,intellij+all
 
+### OSM large files ###
+data/planet-220926.osm.0_0005.bin
+
 ### Intellij+all ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839

@@ -3,7 +3,6 @@ use crate::logger::LOGGER;
 use crate::number::{number, ReadBytes};
 use crate::types::Buffer;
 use crate::types::Data;
-use byteorder::{ByteOrder, LittleEndian};
 use math::round;
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Result, Seek};
@@ -27,14 +26,13 @@ pub struct Cache {
     geo_data: GeoData,
 }
 
-static mut HEADER_SIZE: u32 = 32;
+const HEADER_SIZE: u32 = 32;
+const MAGIC_NUMBER: u32 = 1845944321;
 
 #[allow(unused)]
 impl Cache {
     pub fn lookup(&mut self, longitude: f32, latitude: f32) -> Vec<String> {
-        debug!(LOGGER, "longitude: {}, latitude: {}", longitude, latitude);
         let index = self.lookup_uncached(longitude, latitude);
-        println!("Index {}", index);
         return match self.lookup_entry(index) {
             Some(address) => address.to_vec(),
             None => {
@@ -53,17 +51,11 @@ impl Cache {
         let mut value = 0 as i64;
         let mut bits = 0 as u32;
         loop {
-            // let position = self.buffer.position() as i64;
-            // let data = self
-            //     .buffer
-            //     .seek(SeekFrom::Current(position))
-            //     .expect(format!("Can't find the position {} in the buffer", position).as_str())
-            //     as i32;
             let mut bit_buffer = vec![0u8; 1];
             self.buffer
                 .read_exact(&mut bit_buffer)
                 .expect("An error occurred while reading bytes from the buffer");
-            let data = LittleEndian::read_int(&bit_buffer, 1);
+            let data = i8::from_be_bytes(bit_buffer.try_into().unwrap()) as i64;
             value |= (data & 0x7F) << bits;
             if (data & 0x80) == 0 {
                 return Ok(value);
@@ -76,10 +68,6 @@ impl Cache {
                 );
             }
         }
-        Error::new(
-            ErrorKind::InvalidData,
-            "An issue occurred while reading the integer",
-        );
     }
 
     fn lookup_uncached(&mut self, longitude: f32, latitude: f32) -> i64 {
@@ -98,64 +86,60 @@ impl Cache {
         {
             return 0;
         }
-        unsafe {
-            let position = (HEADER_SIZE + (number::parse_u32(y) << 2)) as u64;
-            self.buffer.set_position(position);
-            let row_position = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer) as u64;
-            self.buffer.set_position(row_position);
-            let mut i = 0 as i64;
-            let mut x_i64 = i64::from(x);
-            while i <= x_i64 {
-                let count = self.read_unsigned_i32().unwrap();
-                i += self.read_unsigned_i32().unwrap() + 1;
-                if x_i64 < i {
-                    return count;
-                }
+        let position = (HEADER_SIZE + (number::parse_u32(y) << 2)) as u64;
+        self.buffer.set_position(position);
+        let row_position = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer) as u64;
+        self.buffer.set_position(row_position);
+        let mut i = 0 as i64;
+        let mut x_i64 = i64::from(x);
+        while i <= x_i64 {
+            let count = self.read_unsigned_i32().unwrap();
+            i += self.read_unsigned_i32().unwrap() + 1;
+            if x_i64 < i {
+                return count;
             }
-            return 0;
         }
+        return 0;
     }
 
     fn lookup_entry_uncached(&mut self, index: u32) -> Vec<String> {
-        unsafe {
-            let position = (HEADER_SIZE + ((self.geo_data.height + index) << 2)) as u64;
-            self.buffer.set_position(position);
-            let start = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer);
-            let end = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer);
-            if start == end {
-                return vec![];
-            }
-            let length = (end - start) as usize;
-            self.buffer.set_position(start as u64);
-            let mut decoded_buffer = vec![0u8; length];
-            self.buffer.read_exact(&mut decoded_buffer);
-            self.buffer.rewind();
-            return match std::str::from_utf8(&mut decoded_buffer) {
-                Ok(address) => {
-                    let mut result: Vec<String> = address
-                        .split('\0')
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>();
-                    match result.last() {
-                        Some(maybe_empty_string) => {
-                            if maybe_empty_string == &"" {
-                                // remove the last element because it's an empty string
-                                result.pop();
-                            }
-                        }
-                        None => (),
-                    }
-                    return result;
-                }
-                Err(error) => {
-                    error!(
-                        LOGGER,
-                        "We couldn't find any geospatial address for the index {}", index
-                    );
-                    return vec![];
-                }
-            };
+        let position = (HEADER_SIZE + ((self.geo_data.height + index) << 2)) as u64;
+        self.buffer.set_position(position);
+        let start = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer);
+        let end = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer);
+        if start == end {
+            return vec![];
         }
+        let length = (end - start) as usize;
+        self.buffer.set_position(start as u64);
+        let mut decoded_buffer = vec![0u8; length];
+        self.buffer.read_exact(&mut decoded_buffer);
+        self.buffer.rewind();
+        return match std::str::from_utf8(&mut decoded_buffer) {
+            Ok(address) => {
+                let mut result: Vec<String> = address
+                    .split('\0')
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>();
+                match result.last() {
+                    Some(maybe_empty_string) => {
+                        if maybe_empty_string == &"" {
+                            // remove the last element because it's an empty string
+                            result.pop();
+                        }
+                    }
+                    None => (),
+                }
+                result
+            }
+            Err(error) => {
+                error!(
+                    LOGGER,
+                    "We couldn't find any geospatial address for the index {}", index
+                );
+                vec![]
+            }
+        };
     }
 
     fn lookup_entry(&mut self, key: i64) -> Option<&mut Vec<String>> {
@@ -176,10 +160,10 @@ impl Cache {
         };
     }
 
-    pub unsafe fn parse_buffer(file_name: &String) -> Result<Self> {
+    pub fn parse_buffer(file_name: &String) -> Result<Self> {
         let mut buffer = Cursor::new(io::get_file_as_byte_vec(&file_name).unwrap());
         let magic_number = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
-        if magic_number != 1845944321 {
+        if magic_number != MAGIC_NUMBER {
             panic!("Index file does not have the correct type or version.")
         }
         let width = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
@@ -201,7 +185,6 @@ impl Cache {
             numentries
         );
         let cache = HashMap::<u32, Vec<String>>::with_capacity(numentries as usize);
-        debug!(LOGGER, "Cache size: {}", cache.capacity());
         let geo_data = GeoData {
             width,
             height,
