@@ -28,3 +28,7 @@ impl Geocoding {
         return self.cache.lookup(longitude, latitude);
     }
 }
+
+#[path = "../tests/geocoding/geocoding.rs"]
+#[cfg(test)]
+mod tests;

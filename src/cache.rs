@@ -29,7 +29,6 @@ pub struct Cache {
 const HEADER_SIZE: u32 = 32;
 const MAGIC_NUMBER: u32 = 1845944321;
 
-#[allow(unused)]
 impl Cache {
     pub fn lookup(&mut self, longitude: f32, latitude: f32) -> Vec<String> {
         let index = self.lookup_uncached(longitude, latitude);
@@ -91,7 +90,7 @@ impl Cache {
         let row_position = <dyn Read as ReadBytes>::read::<u32>(&mut self.buffer) as u64;
         self.buffer.set_position(row_position);
         let mut i = 0 as i64;
-        let mut x_i64 = i64::from(x);
+        let x_i64 = i64::from(x);
         while i <= x_i64 {
             let count = self.read_unsigned_i32().unwrap();
             i += self.read_unsigned_i32().unwrap() + 1;
@@ -113,8 +112,16 @@ impl Cache {
         let length = (end - start) as usize;
         self.buffer.set_position(start as u64);
         let mut decoded_buffer = vec![0u8; length];
-        self.buffer.read_exact(&mut decoded_buffer);
-        self.buffer.rewind();
+        self.buffer.read_exact(&mut decoded_buffer).expect(
+            format!(
+                "An error thrown when reading exactly {} from the buffer",
+                length
+            )
+            .as_str(),
+        );
+        self.buffer
+            .rewind()
+            .expect("An error occurred while rewinding the buffer");
         return match std::str::from_utf8(&mut decoded_buffer) {
             Ok(address) => {
                 let mut result: Vec<String> = address
@@ -132,7 +139,7 @@ impl Cache {
                 }
                 result
             }
-            Err(error) => {
+            Err(_) => {
                 error!(
                     LOGGER,
                     "We couldn't find any geospatial address for the index {}", index
@@ -202,3 +209,7 @@ impl Cache {
         })
     }
 }
+
+#[path = "../tests/cache/cache.rs"]
+#[cfg(test)]
+mod tests;
