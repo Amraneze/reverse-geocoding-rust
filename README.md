@@ -33,13 +33,21 @@ cargo build
 ### Debug mode
 
 ```shell
-cargo run --package reverse-geocoding --bin reverse-geocoding -- data/osm-20151130-1.0-2.bin
+cargo run --package reverse-geocoding --bin reverse-geocoding -- -f data/osm-20151130-1.0-2.bin
+```
+Or
+```shell
+cargo run --package reverse-geocoding --bin reverse-geocoding -- --path-file=data/osm-20151130-1.0-2.bin
 ```
 
 ### Release mode
 
 ```
-cargo run --package reverse-geocoding --bin reverse-geocoding --release -- data/osm-20151130-1.0-2.bin
+cargo run --package reverse-geocoding --bin reverse-geocoding --release -- -f data/osm-20151130-1.0-2.bin
+```
+or
+```
+cargo run --package reverse-geocoding --bin reverse-geocoding --release -- --path-file=data/osm-20151130-1.0-2.bin
 ```
 
 ### Testing

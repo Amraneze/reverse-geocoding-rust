@@ -1,9 +1,13 @@
+use reverse_geocoding::config::Config;
 use reverse_geocoding::geocoding::Geocoding;
-use std::env;
+use reverse_geocoding::socket::listener;
 use std::io::Result;
+use structopt::StructOpt;
 
-pub fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let mut _geocoding: Geocoding = Geocoding::new(&args);
+#[tokio::main]
+async fn main() -> Result<()> {
+    let options = Config::from_args();
+    let geocoding: Geocoding = Geocoding::new(&options);
+    listener(options, &geocoding).await;
     Ok(())
 }

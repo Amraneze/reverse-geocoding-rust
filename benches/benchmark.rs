@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::Rng;
+use reverse_geocoding::config::Config;
 use reverse_geocoding::geocoding::Geocoding;
 
 const MAX_LATITUDE: f64 = 90.0000000;
@@ -32,11 +33,11 @@ fn bench_lookup(c: &mut Criterion) {
         })
         .collect::<Vec<String>>();
     for path in osm_file_paths {
-        let args: Vec<String> = vec!["main", &path]
-            .iter()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>();
-        let mut geocoding = Geocoding::new(&args);
+        let config = Config {
+            file_path: path.to_string(),
+            port: 4020,
+        };
+        let mut geocoding = Geocoding::new(&config);
         grouped_benchmarks.bench_function(BenchmarkId::new("Cache::Lookup_uncached", &path), |b| {
             b.iter(|| {
                 let longitude = rand::thread_rng().gen_range(MIN_LONGITUDE..MAX_LONGITUDE) as f32;

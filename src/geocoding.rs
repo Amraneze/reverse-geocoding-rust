@@ -1,14 +1,6 @@
 use crate::cache::Cache;
+use crate::config::Config;
 use crate::logger::LOGGER;
-
-fn parse_file_name(args: &Vec<String>) -> String {
-    if args.len() < 2 {
-        panic!("File path is not provided as argument. Use the format cargo ... -- file_path");
-    }
-    let file_name: String = args[1].clone();
-    debug!(LOGGER, "File name used is {}", file_name);
-    return file_name;
-}
 
 #[derive(Debug, Default)]
 pub struct Geocoding {
@@ -16,9 +8,8 @@ pub struct Geocoding {
 }
 
 impl Geocoding {
-    pub fn new(args: &Vec<String>) -> Self {
-        let file_name: String = parse_file_name(&args);
-        let cache: Cache = Cache::parse_buffer(&file_name)
+    pub fn new(options: &Config) -> Self {
+        let cache: Cache = Cache::parse_buffer(&options.file_path)
             .expect("An error occurred while generating Geocode reverse cache");
         return Self { cache };
     }
