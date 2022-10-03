@@ -8,6 +8,6 @@ use structopt::StructOpt;
 async fn main() -> Result<()> {
     let options = Config::from_args();
     let geocoding: Geocoding = Geocoding::new(&options);
-    listener(options, &geocoding).await;
+    listener(options, geocoding).await;
     Ok(())
 }

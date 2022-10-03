@@ -2,7 +2,7 @@ use crate::cache::Cache;
 use crate::config::Config;
 use crate::logger::LOGGER;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Geocoding {
     cache: Cache,
 }

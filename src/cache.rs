@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::io::{Cursor, Read, Result, Seek};
 use std::io::{Error, ErrorKind};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct GeoData {
     width: u32,
     height: u32,
@@ -19,7 +19,7 @@ pub struct GeoData {
     numentries: u32,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Cache {
     cache: Data,
     buffer: Buffer,
@@ -171,7 +171,7 @@ impl Cache {
         let mut buffer = Cursor::new(io::get_file_as_byte_vec(&file_name).unwrap());
         let magic_number = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
         if magic_number != MAGIC_NUMBER {
-            panic!("Index file does not have the correct type or version.")
+            panic!("Index file does not have the correct type or version.");
         }
         let width = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
         let height = <dyn Read as ReadBytes>::read::<u32>(&mut buffer);
