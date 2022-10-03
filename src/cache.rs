@@ -7,6 +7,7 @@ use math::round;
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Result, Seek};
 use std::io::{Error, ErrorKind};
+use std::str::from_utf8;
 
 #[derive(Debug, Default, Clone)]
 pub struct GeoData {
@@ -122,7 +123,7 @@ impl Cache {
         self.buffer
             .rewind()
             .expect("An error occurred while rewinding the buffer");
-        return match std::str::from_utf8(&mut decoded_buffer) {
+        return match from_utf8(&mut decoded_buffer) {
             Ok(address) => {
                 let mut result: Vec<String> = address
                     .split('\0')
