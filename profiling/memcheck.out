@@ -1,0 +1,74 @@
+==29678== Memcheck, a memory error detector
+==29678== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==29678== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==29678== Command: ./reverse-geocoding --path-file /mnt/d/Projects/reverse-geocoding-rust/data/planet-220926.osm.0_0005.bin
+==29678== Parent PID: 29677
+==29678== 
+==29678== Syscall param statx(file_name) points to unaddressable byte(s)
+==29678==    at 0x4AF388E: statx (statx.c:29)
+==29678==    by 0x582021: statx (weak.rs:176)
+==29678==    by 0x582021: std::sys::unix::fs::try_statx (fs.rs:161)
+==29678==    by 0x573C00: file_attr (fs.rs:949)
+==29678==    by 0x573C00: metadata (fs.rs:521)
+==29678==    by 0x573C00: std::fs::buffer_capacity_required (fs.rs:689)
+==29678==    by 0x573E8B: <std::fs::File as std::io::Read>::read_to_string (fs.rs:723)
+==29678==    by 0x26AAA8: num_cpus::linux::Cgroup::param (linux.rs:214)
+==29678==    by 0x26A939: num_cpus::linux::Cgroup::quota_us (linux.rs:203)
+==29678==    by 0x26A7C2: num_cpus::linux::Cgroup::cpu_quota (linux.rs:188)
+==29678==    by 0x26A3A1: num_cpus::linux::load_cgroups (linux.rs:149)
+==29678==    by 0x26A03D: num_cpus::linux::init_cgroups (linux.rs:129)
+==29678==    by 0x26E778: core::ops::function::FnOnce::call_once (function.rs:248)
+==29678==    by 0x26E229: std::sync::once::Once::call_once::{{closure}} (once.rs:276)
+==29678==    by 0x186039: std::sync::once::Once::call_inner (once.rs:434)
+==29678==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==29678== 
+==29678== Syscall param statx(buf) points to unaddressable byte(s)
+==29678==    at 0x4AF388E: statx (statx.c:29)
+==29678==    by 0x582021: statx (weak.rs:176)
+==29678==    by 0x582021: std::sys::unix::fs::try_statx (fs.rs:161)
+==29678==    by 0x573C00: file_attr (fs.rs:949)
+==29678==    by 0x573C00: metadata (fs.rs:521)
+==29678==    by 0x573C00: std::fs::buffer_capacity_required (fs.rs:689)
+==29678==    by 0x573E8B: <std::fs::File as std::io::Read>::read_to_string (fs.rs:723)
+==29678==    by 0x26AAA8: num_cpus::linux::Cgroup::param (linux.rs:214)
+==29678==    by 0x26A939: num_cpus::linux::Cgroup::quota_us (linux.rs:203)
+==29678==    by 0x26A7C2: num_cpus::linux::Cgroup::cpu_quota (linux.rs:188)
+==29678==    by 0x26A3A1: num_cpus::linux::load_cgroups (linux.rs:149)
+==29678==    by 0x26A03D: num_cpus::linux::init_cgroups (linux.rs:129)
+==29678==    by 0x26E778: core::ops::function::FnOnce::call_once (function.rs:248)
+==29678==    by 0x26E229: std::sync::once::Once::call_once::{{closure}} (once.rs:276)
+==29678==    by 0x186039: std::sync::once::Once::call_inner (once.rs:434)
+==29678==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==29678== 
+==29678== Warning: set address range perms: large range [0x6807040, 0x2356c4ce) (undefined)
+==29678== Warning: set address range perms: large range [0x6807040, 0x2356c4ce) (defined)
+==29678== 
+==29678== Process terminating with default action of signal 2 (SIGINT)
+==29678==    at 0x4AFE73D: syscall (syscall.S:38)
+==29678==    by 0x29279A: parking_lot_core::thread_parker::imp::ThreadParker::futex_wait (linux.rs:112)
+==29678==    by 0x29257B: <parking_lot_core::thread_parker::imp::ThreadParker as parking_lot_core::thread_parker::ThreadParkerT>::park (linux.rs:66)
+==29678==    by 0x28FA84: parking_lot_core::parking_lot::park::{{closure}} (parking_lot.rs:635)
+==29678==    by 0x28F039: with_thread_data<parking_lot_core::parking_lot::ParkResult, parking_lot_core::parking_lot::park::{closure_env#0}<parking_lot::condvar::{impl#1}::wait_until_internal::{closure_env#0}, parking_lot::condvar::{impl#1}::wait_until_internal::{closure_env#1}, parking_lot::condvar::{impl#1}::wait_until_internal::{closure_env#2}>> (parking_lot.rs:207)
+==29678==    by 0x28F039: parking_lot_core::parking_lot::park (parking_lot.rs:600)
+==29678==    by 0x289837: parking_lot::condvar::Condvar::wait_until_internal (condvar.rs:333)
+==29678==    by 0x23E7B6: parking_lot::condvar::Condvar::wait (condvar.rs:256)
+==29678==    by 0x233F7B: tokio::loom::std::parking_lot::Condvar::wait (parking_lot.rs:150)
+==29678==    by 0x23B0A6: tokio::park::thread::Inner::park (thread.rs:116)
+==29678==    by 0x23C0BB: <tokio::park::thread::CachedParkThread as tokio::park::Park>::park::{{closure}} (thread.rs:285)
+==29678==    by 0x23BB45: tokio::park::thread::CachedParkThread::with_current::{{closure}} (thread.rs:253)
+==29678==    by 0x22F0AA: std::thread::local::LocalKey<T>::try_with (local.rs:445)
+==29678== 
+==29678== HEAP SUMMARY:
+==29678==     in use at exit: 501,311,542 bytes in 502 blocks
+==29678==   total heap usage: 1,473 allocs, 971 frees, 501,368,298 bytes allocated
+==29678== 
+==29678== LEAK SUMMARY:
+==29678==    definitely lost: 0 bytes in 0 blocks
+==29678==    indirectly lost: 0 bytes in 0 blocks
+==29678==      possibly lost: 17,318,898 bytes in 190 blocks
+==29678==    still reachable: 483,992,644 bytes in 312 blocks
+==29678==         suppressed: 0 bytes in 0 blocks
+==29678== Rerun with --leak-check=full to see details of leaked memory
+==29678== 
+==29678== For lists of detected and suppressed errors, rerun with: -s
+==29678== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)

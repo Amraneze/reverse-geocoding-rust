@@ -2,6 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust,intellij+all
 
 ### OSM large files ###
+data/planet-220926.osm.0_001.bin
 data/planet-220926.osm.0_0005.bin
 
 ### Intellij+all ###

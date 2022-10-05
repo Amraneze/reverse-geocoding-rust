@@ -11,6 +11,11 @@ keywords = ["reverse", "geocoding", "latitude", "longitude", "memory"]
 name = "reverse-geocoding-client"
 path = "src/client.rs"
 
+[lib]
+name = "reverse_geocoding_client"
+path = "src/lib.rs"
+
 [dependencies]
 tokio = { version = "1.0.0", features = ["full"] }
 tokio-util = { version = "0.7.4", features = ["codec"] }
+structopt = { version = "0.3", default-features = false }

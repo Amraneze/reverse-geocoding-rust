@@ -9,8 +9,7 @@ Feel free to contribute by creating issues or PRs, it's my first Rust project an
 ## TODO
 
 - [ ] Update README
-- [ ] Add tests 
-- [ ] Find a way to communicate between Java and this app
+- [ ] Add tests
 
 ## Running the application
 
@@ -61,6 +60,9 @@ cargo test
 ```
 cargo bench
 ```
+
+### Profiling
+I used multiple tools for profiling using [Valgrind](https://valgrind.org) such as [Massif](https://valgrind.org/docs/manual/ms-manual.html), [DHAT](https://valgrind.org/docs/manual/dh-manual.html) & [Memcheck](https://valgrind.org/docs/manual/mc-manual.html). You can find all the output in the folder [profiling](./profiling).
 
 #### Result
 
