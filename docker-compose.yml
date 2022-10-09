@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  reverse-geocoding:
+    container_name: reverse-geocoding
+    build:
+        context: .
+        dockerfile: Dockerfile
+        args:
+          - OSM_FILE_PATH=/var/opt/osm/planet-220926.osm.0_0005.bin
+    ports:
+      - 4020:4020
+    volumes:
+      - $PWD/data/:/var/opt/osm
